@@ -250,7 +250,6 @@ export function DashboardWorkspace() {
 
   const recognitionRef = useRef<WebSpeechRecognition | null>(null);
   const promptAtListenStartRef = useRef("");
-  const finalizedTranscriptRef = useRef("");
 
   const defaultMessages: ThreadMessage[] = [
     {
@@ -621,17 +620,10 @@ export function DashboardWorkspace() {
     recognition.interimResults = true;
 
     recognition.onresult = (event: { results: WebSpeechResultList }) => {
-      let interimTranscript = "";
+      let transcript = "";
       for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i]!;
-        const chunk = result[0]?.transcript ?? "";
-        if (result.isFinal) {
-          finalizedTranscriptRef.current += chunk;
-        } else {
-          interimTranscript += chunk;
-        }
+        transcript += event.results[i]![0]!.transcript;
       }
-      const transcript = `${finalizedTranscriptRef.current}${interimTranscript}`.trim();
       const prefix = promptAtListenStartRef.current;
       const spacer = prefix && !prefix.endsWith(" ") && transcript && !transcript.startsWith(" ") ? " " : "";
       setPrompt(prefix + spacer + transcript);
@@ -644,7 +636,6 @@ export function DashboardWorkspace() {
     };
 
     recognition.onend = () => {
-      finalizedTranscriptRef.current = "";
       setListening(false);
     };
 
@@ -715,7 +706,6 @@ export function DashboardWorkspace() {
     }
 
     promptAtListenStartRef.current = prompt;
-    finalizedTranscriptRef.current = "";
     try {
       rec.start();
       setListening(true);
