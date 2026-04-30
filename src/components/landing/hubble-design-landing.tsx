@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowRight, LogIn } from "lucide-react";
 import styles from "./hubble-design-landing.module.css";
 
 export default function HubbleDesignLanding() {
@@ -19,9 +20,11 @@ export default function HubbleDesignLanding() {
           </nav>
           <div className={styles.navActions}>
             <Link className={styles.btnGreen} href="/dashboard">
+              <ArrowRight className={styles.mobileIcon} aria-hidden="true" />
               Start now
             </Link>
             <Link className={styles.btnGhost} href="/login">
+              <LogIn className={styles.mobileIcon} aria-hidden="true" />
               Sign in
             </Link>
           </div>

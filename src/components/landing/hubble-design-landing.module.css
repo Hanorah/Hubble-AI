@@ -69,6 +69,12 @@
   transition: all 0.2s ease;
 }
 
+.mobileIcon {
+  display: none;
+  width: 14px;
+  height: 14px;
+}
+
 .btnGreen {
   background: #dc2626;
   border-color: #dc2626;
@@ -500,6 +506,11 @@
     padding: 9px 10px;
     font-size: 0.8rem;
     text-align: center;
+    gap: 6px;
+  }
+
+  .mobileIcon {
+    display: inline-block;
   }
 
   .heroActions {
