@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { scopeTemplates } from "@/lib/scope-templates";
 
+export const dynamic = "force-dynamic";
+
 export default async function TemplatesPage() {
   const supabase = createSupabaseServerClient();
   const {

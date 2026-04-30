@@ -3,6 +3,8 @@ import { AppShell } from "@/components/app-shell";
 import { ScopeBuilder } from "@/components/scope/scope-builder";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewScopePage() {
   const supabase = createSupabaseServerClient();
   const {
