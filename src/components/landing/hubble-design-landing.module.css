@@ -424,19 +424,23 @@
   }
 
   .nav {
-    padding: 12px;
+    padding: 10px 12px;
     top: 10px;
+    border-radius: 18px;
   }
 
   .navActions {
-    gap: 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .btnGreen,
   .btnGhost,
   .btnWhite {
-    padding: 9px 14px;
-    font-size: 0.88rem;
+    padding: 9px 12px;
+    font-size: 0.82rem;
+    min-height: 38px;
   }
 
   .hero {
@@ -449,6 +453,7 @@
 
   .heroActions {
     flex-wrap: wrap;
+    gap: 10px;
   }
 
   .heroVisual,
@@ -458,5 +463,55 @@
 
   .logo {
     height: 40px;
+  }
+}
+
+@media (max-width: 640px) {
+  .nav {
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 10px auto 22px;
+    border-radius: 14px;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  .logo {
+    height: 34px;
+    width: auto;
+  }
+
+  .navActions {
+    width: 100%;
+    justify-content: stretch;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .btnGreen,
+  .btnGhost,
+  .btnWhite {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 10px;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+
+  .heroActions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .heroActions .btnGreen,
+  .heroActions .btnWhite {
+    width: 100%;
+    min-height: 44px;
+    font-size: 0.9rem;
   }
 }
