@@ -478,15 +478,17 @@
 
 @media (max-width: 640px) {
   .nav {
-    align-items: flex-start;
-    gap: 10px;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
     margin: 10px auto 22px;
     border-radius: 14px;
   }
 
   .brand {
     min-width: 0;
+    flex: 1;
+    overflow: hidden;
   }
 
   .logo {
@@ -495,11 +497,12 @@
   }
 
   .navActions {
-    width: 100%;
-    justify-content: stretch;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    width: auto;
+    justify-content: flex-end;
+    display: flex;
+    flex-wrap: nowrap;
     gap: 8px;
+    flex-shrink: 0;
   }
 
   .btnGreen,
@@ -523,9 +526,10 @@
 
   .navActions .btnGreen,
   .navActions .btnGhost {
-    width: 40px;
-    min-width: 40px;
-    min-height: 40px;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
     padding: 0;
     justify-content: center;
     border-radius: 999px;
