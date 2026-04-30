@@ -266,6 +266,52 @@ export function AppShell({ title, subtitle, children, hideTopNav = false }: Prop
                   );
                 })}
               </nav>
+              <Button
+                size="sm"
+                className="mt-4 w-full justify-start gap-2 border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                onClick={() => {
+                  startNewChat();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>New chat</span>
+              </Button>
+              <div className="mt-6 flex min-h-0 flex-1 flex-col">
+                <p className="px-1 text-xs uppercase tracking-wide text-slate-500">Recent chats</p>
+                <div className="mt-2 min-h-0 space-y-1 overflow-y-auto pr-1 text-sm">
+                  {chatTitles.length ? (
+                    chatTitles.map((item) => (
+                      <div
+                        key={item.id}
+                        className="group flex items-center gap-1 rounded-lg px-2 py-1 text-slate-600 transition-colors hover:bg-red-50 hover:text-red-700"
+                        title={item.title}
+                      >
+                        <button
+                          className="flex-1 rounded-md px-1 py-1 text-left text-sm"
+                          type="button"
+                          onClick={() => {
+                            router.push(`/dashboard?chat=${encodeURIComponent(item.id)}`);
+                            setMobileMenuOpen(false);
+                          }}
+                        >
+                          <span className="line-clamp-1">{item.title}</span>
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Delete chat ${item.title}`}
+                          onClick={() => deleteChatTitle(item.id)}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-red-100 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="px-1 py-2 text-xs text-slate-400">No chats yet</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         ) : null}
