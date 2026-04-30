@@ -295,6 +295,10 @@ export function DashboardWorkspace() {
   }, [chatId]);
 
   useEffect(() => {
+    if (!supabase) {
+      setIsAuthenticated(false);
+      return;
+    }
     let mounted = true;
 
     const loadSession = async () => {
@@ -350,6 +354,10 @@ export function DashboardWorkspace() {
   }, [chatId, messages]);
 
   async function onGoogleLogin() {
+    if (!supabase) {
+      setSpeechError("Authentication is not configured. Set Supabase env vars in Vercel.");
+      return;
+    }
     setSpeechError(null);
     const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/dashboard")}`;
     const { error } = await supabase.auth.signInWithOAuth({

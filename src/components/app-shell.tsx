@@ -48,6 +48,10 @@ export function AppShell({ title, subtitle, children, hideTopNav = false }: Prop
     }`;
 
   useEffect(() => {
+    if (!supabase) {
+      setIsAuthenticated(false);
+      return;
+    }
     let mounted = true;
 
     const loadSession = async () => {
@@ -93,6 +97,7 @@ export function AppShell({ title, subtitle, children, hideTopNav = false }: Prop
   }, []);
 
   async function logout() {
+    if (!supabase) return;
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();

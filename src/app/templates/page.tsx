@@ -9,6 +9,25 @@ import { scopeTemplates } from "@/lib/scope-templates";
 export const dynamic = "force-dynamic";
 
 export default async function TemplatesPage() {
+  const hasSupabaseEnv =
+    Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
+  if (!hasSupabaseEnv) {
+    return (
+      <AppShell title="Templates" subtitle="Configuration required">
+        <Card className="border-amber-200 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="text-amber-900">Supabase env vars are missing</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-amber-900">
+            Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in your Vercel project settings, then
+            redeploy.
+          </CardContent>
+        </Card>
+      </AppShell>
+    );
+  }
+
   const supabase = createSupabaseServerClient();
   const {
     data: { user },
