@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hubble
 
-## Getting Started
+Hubble is an AI-assisted product scoping app built with Next.js.  
+It helps teams turn rough ideas into structured scope outputs through guided chat, reusable templates, and downloadable documents.
 
-First, run the development server:
+## What It Does
+
+- AI chat for discovery and scope intake
+- Template-based project kickstarts (multiple industries)
+- Product spec generator from chat transcript
+- Export to TXT and PPT
+- File attachments in chat (images, PDF, text, audio)
+- Google login/signup via Supabase Auth
+
+## Tech Stack
+
+- Next.js 14 (App Router)
+- TypeScript + React
+- Tailwind CSS
+- Supabase (auth + server/client session handling)
+- Gemini API (chat + product-spec generation)
+
+## Project Structure
+
+- `src/app/page.tsx` - landing page
+- `src/app/dashboard/page.tsx` - main workspace shell
+- `src/components/dashboard/dashboard-workspace.tsx` - chat UI, uploads, spec editor, exports
+- `src/app/templates/page.tsx` - template gallery
+- `src/lib/scope-templates.ts` - template data source
+- `src/app/api/chat/route.ts` - AI chat endpoint
+- `src/app/api/product/generate/route.ts` - product spec generation endpoint
+- `src/app/api/health/route.ts` - health check endpoint
+
+## Requirements
+
+- Node.js 18+ (recommended: Node 20)
+- npm
+- Supabase project
+- Gemini API key
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create your env file:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Fill `.env.local`:
+
+```env
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+
+# AI
+GEMINI_API_KEY=...
+# optional fallback aliases:
+# GOOGLE_AI_API_KEY=...
+# GOOGLE_CLOUD_PROJECT_NUMBER=...
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_FALLBACK_MODELS=gemini-3.1-flash-lite-preview,gemini-3-flash-preview
+```
+
+4. Run dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` - start development server
+- `npm run build` - production build
+- `npm run start` - run built app
+- `npm run lint` - lint project
 
-## Learn More
+## API Endpoints
 
-To learn more about Next.js, take a look at the following resources:
+- `GET /api/health` - basic health response
+- `POST /api/chat` - AI scope chat
+- `POST /api/product/generate` - generate structured product spec JSON
+- `POST /api/scopes/generate` - scope generation endpoint
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- If AI calls fail, verify `GEMINI_API_KEY` and model names first.
+- If auth fails, verify Supabase URL/keys and callback setup.
+- Uploaded files are sent with the chat request; keep file sizes reasonable for best performance.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
