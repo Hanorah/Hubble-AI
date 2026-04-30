@@ -75,6 +75,10 @@
   height: 14px;
 }
 
+.navActionText {
+  display: inline;
+}
+
 .btnGreen {
   background: #dc2626;
   border-color: #dc2626;
@@ -511,6 +515,20 @@
 
   .mobileIcon {
     display: inline-block;
+  }
+
+  .navActionText {
+    display: none;
+  }
+
+  .navActions .btnGreen,
+  .navActions .btnGhost {
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 999px;
   }
 
   .heroActions {

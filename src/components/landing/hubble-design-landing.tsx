@@ -19,13 +19,13 @@ export default function HubbleDesignLanding() {
             <Link href="/templates">Templates</Link>
           </nav>
           <div className={styles.navActions}>
-            <Link className={styles.btnGreen} href="/dashboard">
+            <Link className={styles.btnGreen} href="/dashboard" aria-label="Start now">
               <ArrowRight className={styles.mobileIcon} aria-hidden="true" />
-              Start now
+              <span className={styles.navActionText}>Start now</span>
             </Link>
-            <Link className={styles.btnGhost} href="/login">
+            <Link className={styles.btnGhost} href="/login" aria-label="Sign in">
               <LogIn className={styles.mobileIcon} aria-hidden="true" />
-              Sign in
+              <span className={styles.navActionText}>Sign in</span>
             </Link>
           </div>
         </header>
