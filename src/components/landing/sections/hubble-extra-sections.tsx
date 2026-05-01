@@ -199,7 +199,7 @@ export function HubbleFinalCtaSection() {
           <h2>Stop staring at the blank page. Get a real scope in minutes.</h2>
           <p>Drop in your idea and let Hubble handle the rest.</p>
           <div className="hubble-final-cta-actions">
-            <a href="/scope/new" className="hubble-cta-primary">
+            <a href="/dashboard" className="hubble-cta-primary">
               Start scoping for free
             </a>
             <a href="/templates" className="hubble-cta-secondary">

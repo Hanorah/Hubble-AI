@@ -24,7 +24,7 @@ function mapToHubbleHref(rawHref: string): string {
   }
 
   if (href.includes("betanet") || href.includes("faucet") || href.includes("roadmap")) {
-    return "/scope/new";
+    return "/dashboard";
   }
 
   if (
@@ -131,7 +131,7 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
             <ul class="top">
               <li class="anim"><a href="/dashboard">Dashboard</a></li>
               <li class="anim"><a href="/templates">Templates</a></li>
-              <li class="anim"><a href="/scope/new">Start Scope</a></li>
+              <li class="anim"><a href="/dashboard">Start Chat</a></li>
               <li class="anim"><a href="/privacy">Privacy</a></li>
             </ul>
           </nav>
@@ -346,7 +346,7 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
 
         const cta = document.createElement("a");
         cta.className = "cta-btn split has-arr hubble-hero-cta";
-        cta.setAttribute("href", "/scope/new");
+        cta.setAttribute("href", "/dashboard");
         cta.setAttribute("data-text", "Start scoping");
         cta.textContent = "Start scoping";
         cta.setAttribute("style", "display:inline-flex;color:#fff;");
@@ -960,7 +960,7 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
 
     const calloutCta = section.querySelector(".cta a.cta-btn");
     if (calloutCta) {
-      calloutCta.setAttribute("href", "/scope/new");
+      calloutCta.setAttribute("href", "/dashboard");
       calloutCta.setAttribute("data-text", "Get my scope");
       calloutCta.classList.add("hubble-callout-cta");
     }
@@ -1027,7 +1027,7 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
         eyebrow: "For founders",
         heading: "Go from idea<br>to scope",
         body: "Drop in your idea, pick a template, and Hubble drafts a full product scope you can use to brief your team or agency.",
-        href: "/scope/new",
+        href: "/dashboard",
       },
       {
         eyebrow: "For product teams",
