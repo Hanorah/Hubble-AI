@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { type SharedChatPayload, parseSharedChatParam } from "@/lib/chat-share";
 
-export default function SharedLandingPage() {
+function SharedLandingContent() {
   const searchParams = useSearchParams();
   const data = searchParams.get("data");
   const id = searchParams.get("id");
@@ -102,6 +102,20 @@ export default function SharedLandingPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function SharedLandingPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-16 sm:px-8">
+          <p className="text-slate-700">Loading landing page...</p>
+        </main>
+      }
+    >
+      <SharedLandingContent />
+    </Suspense>
   );
 }
 

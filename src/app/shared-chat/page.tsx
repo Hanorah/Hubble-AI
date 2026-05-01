@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { type SharedChatPayload, parseSharedChatParam } from "@/lib/chat-share";
 import { Button } from "@/components/ui/button";
 
-export default function SharedChatPage() {
+function SharedChatContent() {
   const searchParams = useSearchParams();
   const data = searchParams.get("data");
   const id = searchParams.get("id");
@@ -168,6 +168,22 @@ export default function SharedChatPage() {
         </div>
       ) : null}
     </main>
+  );
+}
+
+export default function SharedChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto min-h-screen w-full max-w-3xl px-4 py-16 sm:px-8">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6">
+            <h1 className="text-xl font-semibold text-slate-900">Loading shared chat...</h1>
+          </div>
+        </main>
+      }
+    >
+      <SharedChatContent />
+    </Suspense>
   );
 }
 
