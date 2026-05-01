@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
@@ -18,12 +18,13 @@ export function AuthForm({ mode }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
-  const supabase = createSupabaseBrowserClient();
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   const isLogin = mode === "login";
   const title = isLogin ? "Sign in" : "Sign up";
 
   async function onSubmit() {
+    if (loading) return;
     setLoading(true);
     setMessage(null);
 
@@ -57,7 +58,9 @@ export function AuthForm({ mode }: Props) {
   }
 
   async function onGoogle() {
+    if (loading) return;
     setLoading(true);
+    setMessage(null);
     const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

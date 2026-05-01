@@ -298,6 +298,8 @@ export function DashboardWorkspace() {
   const [listening, setListening] = useState(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authResolved, setAuthResolved] = useState(false);
+  const [authRedirecting, setAuthRedirecting] = useState(false);
   const [specLoading, setSpecLoading] = useState(false);
   const [specError, setSpecError] = useState<string | null>(null);
   const [productSpec, setProductSpec] = useState<ProductSpec | null>(null);
@@ -372,6 +374,7 @@ export function DashboardWorkspace() {
   useEffect(() => {
     if (!supabase) {
       setIsAuthenticated(false);
+      setAuthResolved(true);
       return;
     }
     let mounted = true;
@@ -380,6 +383,7 @@ export function DashboardWorkspace() {
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
       setIsAuthenticated(Boolean(data.session?.user));
+      setAuthResolved(true);
     };
 
     loadSession();
@@ -429,17 +433,22 @@ export function DashboardWorkspace() {
   }, [chatId, messages]);
 
   async function onGoogleLogin() {
+    if (authRedirecting) return;
     if (!supabase) {
       setSpeechError("Authentication is not configured. Set Supabase env vars in Vercel.");
       return;
     }
+    setAuthRedirecting(true);
     setSpeechError(null);
     const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent("/dashboard")}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo },
     });
-    if (error) setSpeechError(error.message);
+    if (error) {
+      setSpeechError(error.message);
+      setAuthRedirecting(false);
+    }
   }
 
   function updateSectionContent(key: string, value: string) {
@@ -1302,15 +1311,16 @@ export function DashboardWorkspace() {
 
       <div className="mx-auto mt-8 w-full max-w-4xl">
         <div className="w-full overflow-hidden rounded-[1.75rem] border border-red-100 bg-white shadow-[0_8px_30px_rgb(127,29,29,0.08)]">
-          {!isAuthenticated ? (
+          {authResolved && !isAuthenticated ? (
             <div className="flex flex-col gap-2 border-b border-red-100 bg-red-50 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <p className="text-sm text-slate-700">Login with Google before sending your first chat.</p>
               <Button
                 type="button"
                 onClick={onGoogleLogin}
+                disabled={authRedirecting}
                 className="h-9 bg-red-600 px-4 text-white hover:bg-red-700"
               >
-                Continue with Google
+                {authRedirecting ? "Redirecting..." : "Continue with Google"}
               </Button>
             </div>
           ) : null}
@@ -1417,9 +1427,9 @@ export function DashboardWorkspace() {
                 size="icon"
                 className="h-9 w-9 rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700 disabled:opacity-50"
                 onClick={sendMessage}
-                disabled={loading || !isAuthenticated}
+                disabled={loading || !authResolved || !isAuthenticated}
                 aria-label={loading ? "Sending" : "Send message"}
-                title={!isAuthenticated ? "Login required" : loading ? "Sending…" : "Send"}
+                title={!authResolved ? "Checking session..." : !isAuthenticated ? "Login required" : loading ? "Sending…" : "Send"}
               >
                 <Send className="h-4 w-4" strokeWidth={2} />
               </Button>
