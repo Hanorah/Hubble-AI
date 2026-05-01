@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { type SharedChatPayload, parseSharedChatParam } from "@/lib/chat-share";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 function SharedChatContent() {
   const searchParams = useSearchParams();
   const data = searchParams.get("data");
