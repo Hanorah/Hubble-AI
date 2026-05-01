@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type ShardeumSourceHtmlSectionProps = {
   selector: string;
+  onReady?: (hasMarkup: boolean) => void;
 };
 
 const htmlCache = new Map<string, string>();
@@ -360,18 +361,6 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
         heroParagraph.insertAdjacentElement("afterend", ctaWrap);
       }
 
-      if (!section.querySelector(".hubble-hero-trust")) {
-        const trust = document.createElement("div");
-        trust.className = "hubble-hero-trust";
-        trust.innerHTML =
-          '<span class="hubble-hero-trust-item">✦ Spec, PRD &amp; user stories</span>' +
-          '<span class="hubble-hero-trust-item">✦ Built-in templates</span>' +
-          '<span class="hubble-hero-trust-item">✦ Export anywhere</span>';
-        const ctaWrap = section.querySelector(".hubble-hero-cta-wrap");
-        if (ctaWrap) {
-          ctaWrap.insertAdjacentElement("afterend", trust);
-        }
-      }
     }
 
     const heroVideo = section.querySelector(".hero-video");
@@ -422,20 +411,6 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
           color: #c2383a;
           border-color: #c2383a;
         }
-        #home-hero .hubble-hero-trust {
-          margin-top: 28px;
-          display: flex;
-          justify-content: center;
-          flex-wrap: wrap;
-          gap: 24px 36px;
-          color: #555;
-          font-weight: 500;
-          font-size: 14px;
-          letter-spacing: 0.02em;
-        }
-        #home-hero .hubble-hero-trust-item {
-          color: #555;
-        }
         #home-hero .max-wrap.pad-wrap {
           padding-left: clamp(14px, 4vw, 28px) !important;
           padding-right: clamp(14px, 4vw, 28px) !important;
@@ -463,6 +438,15 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
           margin-left: auto !important;
           margin-right: auto !important;
         }
+        #home-hero .hero-text h1.big .hl,
+        #home-hero .hero-text h1.big .highlight,
+        #home-hero .hero-text h1.big .blue,
+        #home-hero .hero-text h1.big .green,
+        #home-hero .hero-text h1.big [class*="blue"],
+        #home-hero .hero-text h1.big [class*="green"],
+        #home-hero .hero-text h1.big [class*="aqua"] {
+          color: #c2383a !important;
+        }
         #home-hero .hero-text p {
           font-size: clamp(16px, 2.2vw, 22px) !important;
           line-height: 1.35 !important;
@@ -476,8 +460,8 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
           min-height: 52px !important;
         }
         #home-hero .hubble-hero-cta .cta-txt {
-          background-color: #fff !important;
-          color: #000 !important;
+          background-color: #c2383a !important;
+          color: #fff !important;
           border-color: #000 !important;
           font-size: clamp(14px, 1.4vw, 17px) !important;
           font-weight: 600 !important;
@@ -495,16 +479,17 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
           padding: 8px !important;
         }
         #home-hero .hubble-hero-cta .arr {
-          background-color: #c2383a !important;
+          background-color: #000 !important;
           width: 28px !important;
           height: 28px !important;
+          margin-top: -9px !important;
         }
         #home-hero .hubble-hero-cta .arr .arr-img .icon,
         #home-hero .hubble-hero-cta .arr .arr-img img {
           color: #000 !important;
         }
         #home-hero .hubble-hero-cta .arr .arr-img img {
-          filter: brightness(0) saturate(100%) !important;
+          filter: brightness(0) invert(1) !important;
         }
         #home-hero .hubble-hero-cta:hover .cta-arr {
           border-left-color: #000 !important;
@@ -545,11 +530,6 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
             line-height: 1.35 !important;
             max-width: 94% !important;
           }
-          #home-hero .hubble-hero-trust {
-            margin-top: 18px !important;
-            gap: 10px 16px !important;
-            font-size: 12px !important;
-          }
           #home-hero .hubble-hero-cta-wrap {
             margin-top: 22px !important;
             gap: 10px !important;
@@ -579,7 +559,7 @@ function normalizeSectionMarkup(section: Element, selector: string): string {
           #home-hero .hubble-hero-cta .arr {
             width: 30px !important;
             height: 30px !important;
-            margin-top: -15px !important;
+            margin-top: -9px !important;
             right: 10px !important;
             border-radius: 999px !important;
           }
@@ -1594,7 +1574,7 @@ function attachProjectsCarousel(container: HTMLElement) {
   };
 }
 
-export function ShardeumSourceHtmlSection({ selector }: ShardeumSourceHtmlSectionProps) {
+export function ShardeumSourceHtmlSection({ selector, onReady }: ShardeumSourceHtmlSectionProps) {
   const [markup, setMarkup] = useState<string>("");
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -1606,16 +1586,21 @@ export function ShardeumSourceHtmlSection({ selector }: ShardeumSourceHtmlSectio
         if (!mounted) return;
         const doc = new DOMParser().parseFromString(html, "text/html");
         const section = doc.querySelector(selector);
-        setMarkup(section ? normalizeSectionMarkup(section, selector) : "");
+        const normalizedMarkup = section ? normalizeSectionMarkup(section, selector) : "";
+        setMarkup(normalizedMarkup);
+        onReady?.(Boolean(normalizedMarkup));
       })
       .catch(() => {
-        if (mounted) setMarkup("");
+        if (mounted) {
+          setMarkup("");
+          onReady?.(false);
+        }
       });
 
     return () => {
       mounted = false;
     };
-  }, [selector]);
+  }, [onReady, selector]);
 
   useEffect(() => {
     if (!markup || !containerRef.current) return;
