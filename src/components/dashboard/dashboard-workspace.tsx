@@ -4,8 +4,9 @@ import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState }
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Download, FileText, Mic, Plus, Send, WandSparkles, X } from "lucide-react";
+import { Download, FileText, Mic, Plus, Send, Share2, WandSparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { SharedChatPayload } from "@/lib/chat-share";
 import { getScopeTemplateById } from "@/lib/scope-templates";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -300,6 +301,10 @@ export function DashboardWorkspace() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authResolved, setAuthResolved] = useState(false);
   const [authRedirecting, setAuthRedirecting] = useState(false);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [shareId, setShareId] = useState<string | null>(null);
+  const [shareSaving, setShareSaving] = useState(false);
   const [specLoading, setSpecLoading] = useState(false);
   const [specError, setSpecError] = useState<string | null>(null);
   const [productSpec, setProductSpec] = useState<ProductSpec | null>(null);
@@ -331,6 +336,25 @@ export function DashboardWorkspace() {
     if (!productLandingPage || !chatId) return null;
     return `/landing/${encodeURIComponent(productLandingPage.slug)}?chat=${encodeURIComponent(chatId)}`;
   }, [chatId, productLandingPage]);
+  const sharePayload = useMemo<SharedChatPayload>(
+    () => ({
+      v: 1,
+      createdAt: new Date().toISOString(),
+      messages: messages
+        .filter((message) => message.text !== THINKING_TEXT)
+        .map((message) => ({
+          role: message.role,
+          text: message.filePreviews?.length ? message.caption?.trim() || message.text : message.text,
+        })),
+      intakeComplete,
+      productSpec,
+      finalDocumentText,
+      productWireframe,
+      productLandingPage,
+      generationChoice,
+    }),
+    [THINKING_TEXT, finalDocumentText, generationChoice, intakeComplete, messages, productLandingPage, productSpec, productWireframe]
+  );
 
   const lastTemplateIdRef = useRef<string | null>(null);
 
@@ -344,6 +368,9 @@ export function DashboardWorkspace() {
 
   useEffect(() => {
     if (!chatId) return;
+    setShareId(null);
+    setShareLink(null);
+    setShareStatus(null);
     setPrompt("");
     setPendingFiles([]);
     setSpeechError(null);
@@ -370,6 +397,40 @@ export function DashboardWorkspace() {
     }
     setMessages(defaultMessages);
   }, [chatId, defaultMessages]);
+
+  useEffect(() => {
+    if (!hasUserMessages) {
+      setShareLink(null);
+      setShareId(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        setShareSaving(true);
+        const response = await fetch("/api/shared-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: shareId, payload: sharePayload }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || "Could not save shared chat.");
+        if (cancelled) return;
+        const id = String(data.id);
+        setShareId(id);
+        setShareLink(`${window.location.origin}/shared-chat/${encodeURIComponent(id)}`);
+      } catch {
+        if (!cancelled) setShareStatus("Could not generate share link right now.");
+      } finally {
+        if (!cancelled) setShareSaving(false);
+      }
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [hasUserMessages, shareId, sharePayload]);
 
   useEffect(() => {
     if (!supabase) {
@@ -1016,6 +1077,25 @@ export function DashboardWorkspace() {
     }
   }
 
+  async function shareChat() {
+    setShareStatus(null);
+    if (shareSaving) {
+      setShareStatus("Generating share link...");
+      return;
+    }
+    if (!shareLink) {
+      setShareStatus("Share link is not ready yet.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setShareStatus("Share link copied.");
+    } catch {
+      window.prompt("Copy this share link:", shareLink);
+      setShareStatus("Share link ready.");
+    }
+  }
+
   return (
     <div className="mx-auto flex min-h-[75vh] w-full max-w-6xl flex-col items-center">
       {!hasUserMessages ? (
@@ -1396,7 +1476,7 @@ export function DashboardWorkspace() {
           </div>
 
           <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 sm:px-5">
-            <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2">
               <Button
                 type="button"
                 variant="ghost"
@@ -1407,6 +1487,20 @@ export function DashboardWorkspace() {
               >
                 <Plus className="h-5 w-5" strokeWidth={2} />
               </Button>
+              {hasUserMessages ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={shareChat}
+                  disabled={!shareLink}
+                  className="h-9 w-9 shrink-0 text-slate-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                  aria-label="Share chat"
+                  title={shareSaving ? "Generating share link..." : "Share chat"}
+                >
+                  <Share2 className="h-4.5 w-4.5" />
+                </Button>
+              ) : null}
             </div>
 
             <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
@@ -1446,6 +1540,7 @@ export function DashboardWorkspace() {
               </Button>
             </div>
           </div>
+          {shareStatus ? <p className="border-t border-slate-100 px-5 pb-3 text-[11px] text-slate-500 sm:px-6">{shareStatus}</p> : null}
         </div>
       </div>
     </div>
