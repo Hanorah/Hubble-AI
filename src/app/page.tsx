@@ -1,5 +1,5 @@
-import HubbleDesignLanding from "../components/landing/hubble-design-landing";
+import ShardeumLanding from "@/components/landing/shardeum-landing";
 
 export default function Home() {
-  return <HubbleDesignLanding />;
+  return <ShardeumLanding />;
 }
