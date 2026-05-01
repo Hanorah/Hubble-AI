@@ -75,6 +75,12 @@ type ThreadMessage = {
   filePreviews?: UserFilePreview[];
 };
 
+type StoredThreadMessage = {
+  role: "user" | "assistant";
+  text: string;
+  caption?: string;
+};
+
 type PendingFile = {
   id: string;
   file: File;
@@ -137,8 +143,15 @@ function saveThreadToStorage(chatKey: string, threadMessages: ThreadMessage[]) {
   if (typeof window === "undefined" || !chatKey) return;
   try {
     const raw = window.localStorage.getItem(CHAT_THREADS_STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Record<string, { messages: ThreadMessage[]; updatedAt: string }>) : {};
-    parsed[chatKey] = { messages: threadMessages, updatedAt: new Date().toISOString() };
+    const parsed = raw
+      ? (JSON.parse(raw) as Record<string, { messages: StoredThreadMessage[]; updatedAt: string }>)
+      : {};
+    const compactMessages: StoredThreadMessage[] = threadMessages.map((message) => ({
+      role: message.role,
+      text: message.text,
+      ...(message.caption?.trim() ? { caption: message.caption } : {}),
+    }));
+    parsed[chatKey] = { messages: compactMessages, updatedAt: new Date().toISOString() };
     window.localStorage.setItem(CHAT_THREADS_STORAGE_KEY, JSON.stringify(parsed));
   } catch {
     // Ignore localStorage failures.
@@ -302,6 +315,7 @@ export function DashboardWorkspace() {
   const [authResolved, setAuthResolved] = useState(false);
   const [authRedirecting, setAuthRedirecting] = useState(false);
   const [shareStatus, setShareStatus] = useState<string | null>(null);
+  const [chatHydrated, setChatHydrated] = useState(false);
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [shareId, setShareId] = useState<string | null>(null);
   const [shareSaving, setShareSaving] = useState(false);
@@ -368,6 +382,7 @@ export function DashboardWorkspace() {
 
   useEffect(() => {
     if (!chatId) return;
+    setChatHydrated(false);
     setShareId(null);
     setShareLink(null);
     setShareStatus(null);
@@ -386,16 +401,23 @@ export function DashboardWorkspace() {
     lastTemplateIdRef.current = null;
     try {
       const raw = window.localStorage.getItem(CHAT_THREADS_STORAGE_KEY);
-      const parsed = raw ? (JSON.parse(raw) as Record<string, { messages?: ThreadMessage[] }>) : {};
+      const parsed = raw ? (JSON.parse(raw) as Record<string, { messages?: StoredThreadMessage[] }>) : {};
       const saved = parsed[chatId]?.messages;
       if (saved?.length) {
-        setMessages(saved);
+        const hydratedMessages: ThreadMessage[] = saved.map((message) => ({
+          role: message.role,
+          text: message.text,
+          ...(message.caption?.trim() ? { caption: message.caption } : {}),
+        }));
+        setMessages(hydratedMessages);
+        setChatHydrated(true);
         return;
       }
     } catch {
       // Ignore localStorage failures.
     }
     setMessages(defaultMessages);
+    setChatHydrated(true);
   }, [chatId, defaultMessages]);
 
   useEffect(() => {
@@ -482,16 +504,23 @@ export function DashboardWorkspace() {
   }
 
   useEffect(() => {
-    if (!chatId) return;
+    if (!chatId || !chatHydrated) return;
     try {
       const raw = window.localStorage.getItem(CHAT_THREADS_STORAGE_KEY);
-      const parsed = raw ? (JSON.parse(raw) as Record<string, { messages: ThreadMessage[]; updatedAt: string }>) : {};
-      parsed[chatId] = { messages, updatedAt: new Date().toISOString() };
+      const parsed = raw
+        ? (JSON.parse(raw) as Record<string, { messages: StoredThreadMessage[]; updatedAt: string }>)
+        : {};
+      const compactMessages: StoredThreadMessage[] = messages.map((message) => ({
+        role: message.role,
+        text: message.text,
+        ...(message.caption?.trim() ? { caption: message.caption } : {}),
+      }));
+      parsed[chatId] = { messages: compactMessages, updatedAt: new Date().toISOString() };
       window.localStorage.setItem(CHAT_THREADS_STORAGE_KEY, JSON.stringify(parsed));
     } catch {
       // Ignore localStorage failures.
     }
-  }, [chatId, messages]);
+  }, [chatHydrated, chatId, messages]);
 
   async function onGoogleLogin() {
     if (authRedirecting) return;
