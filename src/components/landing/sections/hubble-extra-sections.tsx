@@ -111,7 +111,7 @@ export function HubbleFeaturesSection() {
       <div className="hubble-section-inner">
         <div className="hubble-section-head">
           <span className="hubble-section-eyebrow">Why Hubble</span>
-          <h2>Everything you need to scope a product, nothing you don't</h2>
+          <h2>Everything you need to scope a product, nothing you don&apos;t</h2>
           <p>
             A focused toolkit built around one job — getting your product idea out of your head and into a real, shippable plan.
           </p>

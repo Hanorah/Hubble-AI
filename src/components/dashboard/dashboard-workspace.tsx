@@ -251,12 +251,15 @@ export function DashboardWorkspace() {
   const recognitionRef = useRef<WebSpeechRecognition | null>(null);
   const promptAtListenStartRef = useRef("");
 
-  const defaultMessages: ThreadMessage[] = [
-    {
-      role: "assistant",
-      text: "Let us build your scope through a short chat. Start by telling me your product idea.",
-    },
-  ];
+  const defaultMessages = useMemo<ThreadMessage[]>(
+    () => [
+      {
+        role: "assistant",
+        text: "Let us build your scope through a short chat. Start by telling me your product idea.",
+      },
+    ],
+    []
+  );
   const [messages, setMessages] = useState<ThreadMessage[]>(defaultMessages);
   const hasUserMessages = messages.some((message) => message.role === "user");
 
@@ -292,7 +295,7 @@ export function DashboardWorkspace() {
       // Ignore localStorage failures.
     }
     setMessages(defaultMessages);
-  }, [chatId]);
+  }, [chatId, defaultMessages]);
 
   useEffect(() => {
     if (!supabase) {
