@@ -2,6 +2,7 @@
 
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Download, FileText, Mic, Plus, Send, WandSparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -91,15 +92,70 @@ type ProductSpec = {
   sections: ProductSection[];
 };
 
+type ProductWireframeBlock = {
+  id: string;
+  title: string;
+  objective: string;
+  contentItems: string[];
+  ctaLabel?: string;
+};
+
+type ProductWireframe = {
+  pageName: string;
+  blocks: ProductWireframeBlock[];
+};
+
+type ProductLandingSection = {
+  id: string;
+  title: string;
+  body: string;
+};
+
+type ProductLandingPage = {
+  slug: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  primaryCta: string;
+  secondaryCta: string;
+  sections: ProductLandingSection[];
+};
+
 const MAX_FILE_BYTES = 4 * 1024 * 1024;
 const MAX_FILES = 8;
 const FILE_ACCEPT =
   "image/*,audio/*,.pdf,.txt,.md,.json,.csv,text/*,application/pdf,application/json";
 const CHAT_TITLES_STORAGE_KEY = "hubble.chatTitles";
 const CHAT_THREADS_STORAGE_KEY = "hubble.chatThreads";
+const LANDING_PAGES_STORAGE_KEY = "hubble.landingPages";
 
 function randomId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function saveThreadToStorage(chatKey: string, threadMessages: ThreadMessage[]) {
+  if (typeof window === "undefined" || !chatKey) return;
+  try {
+    const raw = window.localStorage.getItem(CHAT_THREADS_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, { messages: ThreadMessage[]; updatedAt: string }>) : {};
+    parsed[chatKey] = { messages: threadMessages, updatedAt: new Date().toISOString() };
+    window.localStorage.setItem(CHAT_THREADS_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    // Ignore localStorage failures.
+  }
+}
+
+function saveLandingToStorage(chatKey: string, landingPage: ProductLandingPage) {
+  if (typeof window === "undefined" || !chatKey) return;
+  try {
+    const raw = window.localStorage.getItem(LANDING_PAGES_STORAGE_KEY);
+    const parsed = raw
+      ? (JSON.parse(raw) as Record<string, { landingPage: ProductLandingPage; updatedAt: string }>)
+      : {};
+    parsed[chatKey] = { landingPage, updatedAt: new Date().toISOString() };
+    window.localStorage.setItem(LANDING_PAGES_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    // Ignore localStorage failures.
+  }
 }
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -247,6 +303,13 @@ export function DashboardWorkspace() {
   const [productSpec, setProductSpec] = useState<ProductSpec | null>(null);
   const [finalDocumentText, setFinalDocumentText] = useState("");
   const [intakeComplete, setIntakeComplete] = useState(false);
+  const [wireframeLoading, setWireframeLoading] = useState(false);
+  const [wireframeError, setWireframeError] = useState<string | null>(null);
+  const [productWireframe, setProductWireframe] = useState<ProductWireframe | null>(null);
+  const [landingLoading, setLandingLoading] = useState(false);
+  const [landingError, setLandingError] = useState<string | null>(null);
+  const [productLandingPage, setProductLandingPage] = useState<ProductLandingPage | null>(null);
+  const [generationChoice, setGenerationChoice] = useState<"skip" | "wireframe" | "landing" | "both">("skip");
 
   const recognitionRef = useRef<WebSpeechRecognition | null>(null);
   const promptAtListenStartRef = useRef("");
@@ -262,6 +325,10 @@ export function DashboardWorkspace() {
   );
   const [messages, setMessages] = useState<ThreadMessage[]>(defaultMessages);
   const hasUserMessages = messages.some((message) => message.role === "user");
+  const landingPreviewHref = useMemo(() => {
+    if (!productLandingPage || !chatId) return null;
+    return `/landing/${encodeURIComponent(productLandingPage.slug)}?chat=${encodeURIComponent(chatId)}`;
+  }, [chatId, productLandingPage]);
 
   const lastTemplateIdRef = useRef<string | null>(null);
 
@@ -282,6 +349,11 @@ export function DashboardWorkspace() {
     setFinalDocumentText("");
     setSpecError(null);
     setIntakeComplete(false);
+    setWireframeError(null);
+    setProductWireframe(null);
+    setLandingError(null);
+    setProductLandingPage(null);
+    setGenerationChoice("skip");
     lastTemplateIdRef.current = null;
     try {
       const raw = window.localStorage.getItem(CHAT_THREADS_STORAGE_KEY);
@@ -526,6 +598,11 @@ export function DashboardWorkspace() {
       const spec = data.spec as ProductSpec;
       setProductSpec(spec);
       setFinalDocumentText(buildFinalDocument(spec));
+      setWireframeError(null);
+      setProductWireframe(null);
+      setLandingError(null);
+      setProductLandingPage(null);
+      setGenerationChoice("skip");
     } catch (error) {
       setSpecError(error instanceof Error ? error.message : "Could not generate product spec.");
     } finally {
@@ -533,8 +610,55 @@ export function DashboardWorkspace() {
     }
   }
 
+  async function generateWireframe() {
+    if (!productSpec) return;
+    setWireframeLoading(true);
+    setWireframeError(null);
+    try {
+      const res = await fetch("/api/product/wireframe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spec: productSpec }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to generate wireframe");
+      setProductWireframe(data.wireframe as ProductWireframe);
+    } catch (error) {
+      setWireframeError(error instanceof Error ? error.message : "Could not generate wireframe.");
+    } finally {
+      setWireframeLoading(false);
+    }
+  }
+
+  async function generateLandingPage() {
+    if (!productSpec || !chatId) return;
+    setLandingLoading(true);
+    setLandingError(null);
+    try {
+      const res = await fetch("/api/product/landing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spec: productSpec }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to generate landing page");
+      const generatedLanding = data.landingPage as ProductLandingPage;
+      setProductLandingPage(generatedLanding);
+      saveLandingToStorage(chatId, generatedLanding);
+    } catch (error) {
+      setLandingError(error instanceof Error ? error.message : "Could not generate landing page.");
+    } finally {
+      setLandingLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!templateId) return;
+    if (!chatId) {
+      const templateChatId = `${Date.now()}`;
+      router.replace(`/dashboard?chat=${encodeURIComponent(templateChatId)}&template=${encodeURIComponent(templateId)}`);
+      return;
+    }
     if (lastTemplateIdRef.current === templateId) return;
 
     const template = getScopeTemplateById(templateId);
@@ -563,7 +687,7 @@ export function DashboardWorkspace() {
     ].join("\n");
 
     // Prefill the chat UI (and attach the same prompt to the AI request)
-    setMessages([
+    const templateThread: ThreadMessage[] = [
       {
         role: "assistant",
         text: `You selected "${template.name}".`,
@@ -572,7 +696,9 @@ export function DashboardWorkspace() {
         role: "user",
         text: comprehensivePrompt,
       },
-    ]);
+    ];
+    setMessages(templateThread);
+    saveThreadToStorage(chatId, templateThread);
 
     (async () => {
       try {
@@ -611,7 +737,7 @@ export function DashboardWorkspace() {
         setLoading(false);
       }
     })();
-  }, [templateId]);
+  }, [chatId, router, templateId]);
 
   useEffect(() => {
     const Ctor = getSpeechRecognitionCtor();
@@ -816,6 +942,7 @@ export function DashboardWorkspace() {
 
     const toRevoke = [...pendingFiles];
     setMessages(nextThread);
+    saveThreadToStorage(effectiveChatId, nextThread);
     setPrompt("");
     setPendingFiles([]);
     revokePending(toRevoke);
@@ -833,7 +960,11 @@ export function DashboardWorkspace() {
 
     setLoading(true);
     try {
-      setMessages((prev) => [...prev, { role: "assistant", text: THINKING_TEXT }]);
+      setMessages((prev) => {
+        const withThinking = [...prev, { role: "assistant" as const, text: THINKING_TEXT }];
+        saveThreadToStorage(effectiveChatId, withThinking);
+        return withThinking;
+      });
 
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -847,18 +978,22 @@ export function DashboardWorkspace() {
       if (parsed.completed) setIntakeComplete(true);
       setMessages((prev) => {
         const cleaned = removeLastThinking(prev);
-        return [...cleaned, { role: "assistant", text: parsed.text }];
+        const withReply = [...cleaned, { role: "assistant" as const, text: parsed.text }];
+        saveThreadToStorage(effectiveChatId, withReply);
+        return withReply;
       });
     } catch (error) {
       setMessages((prev) => {
         const cleaned = removeLastThinking(prev);
-        return [
+        const withError = [
           ...cleaned,
           {
-            role: "assistant",
+            role: "assistant" as const,
             text: error instanceof Error ? `I hit an error: ${error.message}` : "I hit an unknown error.",
           },
         ];
+        saveThreadToStorage(effectiveChatId, withError);
+        return withError;
       });
     } finally {
       setLoading(false);
@@ -1023,6 +1158,143 @@ export function DashboardWorkspace() {
                   className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-red-400"
                 />
               </div>
+
+              <div className="rounded-2xl border border-red-100 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">Optional deliverables</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Choose what to generate next for this product. You can generate wireframes, a landing page, both, or skip.
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {[
+                    { value: "skip", label: "Skip" },
+                    { value: "wireframe", label: "Generate wireframe" },
+                    { value: "landing", label: "Generate landing page" },
+                    { value: "both", label: "Generate both" },
+                  ].map((option) => (
+                    <label
+                      key={option.value}
+                      className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
+                        generationChoice === option.value
+                          ? "border-red-300 bg-red-50 text-red-700"
+                          : "border-slate-200 bg-white text-slate-700"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="generation-choice"
+                        value={option.value}
+                        checked={generationChoice === option.value}
+                        onChange={() =>
+                          setGenerationChoice(option.value as "skip" | "wireframe" | "landing" | "both")
+                        }
+                        className="accent-red-600"
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(generationChoice === "wireframe" || generationChoice === "both") && (
+                    <Button
+                      type="button"
+                      onClick={generateWireframe}
+                      disabled={wireframeLoading || specLoading || loading}
+                      className="h-9 bg-red-600 px-4 text-white hover:bg-red-700 disabled:opacity-60"
+                    >
+                      <WandSparkles className="h-4 w-4" />
+                      {wireframeLoading ? "Generating wireframe..." : "Generate Wireframe"}
+                    </Button>
+                  )}
+                  {(generationChoice === "landing" || generationChoice === "both") && (
+                    <Button
+                      type="button"
+                      onClick={generateLandingPage}
+                      disabled={landingLoading || specLoading || loading}
+                      className="h-9 bg-red-600 px-4 text-white hover:bg-red-700 disabled:opacity-60"
+                    >
+                      <WandSparkles className="h-4 w-4" />
+                      {landingLoading ? "Generating landing page..." : "Generate Landing Page"}
+                    </Button>
+                  )}
+                  {generationChoice === "skip" && (
+                    <p className="text-sm text-slate-500">You can come back and generate these anytime.</p>
+                  )}
+                </div>
+
+                {wireframeError ? (
+                  <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    {wireframeError}
+                  </p>
+                ) : null}
+                {landingError ? (
+                  <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    {landingError}
+                  </p>
+                ) : null}
+              </div>
+
+              {productWireframe ? (
+                <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4">
+                  <p className="text-sm font-semibold text-slate-900">Wireframe: {productWireframe.pageName}</p>
+                  <div className="mt-3 space-y-3">
+                    {productWireframe.blocks.map((block) => (
+                      <div key={block.id} className="rounded-xl border border-red-100 bg-white p-3">
+                        <p className="text-sm font-semibold text-slate-900">{block.title}</p>
+                        <p className="mt-1 text-sm text-slate-600">{block.objective}</p>
+                        {block.contentItems.length ? (
+                          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                            {block.contentItems.map((item, idx) => (
+                              <li key={`${block.id}-item-${idx}`}>{item}</li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        {block.ctaLabel ? <p className="mt-2 text-xs text-red-700">CTA: {block.ctaLabel}</p> : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {productLandingPage ? (
+                <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4">
+                  <p className="text-sm font-semibold text-slate-900">Landing page draft</p>
+                  <p className="mt-1 text-xs text-slate-500">Suggested slug: /products/{productLandingPage.slug}</p>
+                  {landingPreviewHref ? (
+                    <div className="mt-3">
+                      <Button
+                        asChild
+                        type="button"
+                        className="h-9 bg-red-600 px-4 text-white hover:bg-red-700"
+                      >
+                        <Link href={landingPreviewHref} target="_blank" rel="noreferrer">
+                          View landing page
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : null}
+                  <div className="mt-3 rounded-xl border border-red-100 bg-white p-4">
+                    <p className="text-lg font-semibold text-slate-900">{productLandingPage.heroTitle}</p>
+                    <p className="mt-1 text-sm text-slate-700">{productLandingPage.heroSubtitle}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+                        {productLandingPage.primaryCta}
+                      </span>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        {productLandingPage.secondaryCta}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    {productLandingPage.sections.map((section) => (
+                      <div key={section.id} className="rounded-xl border border-red-100 bg-white p-3">
+                        <p className="text-sm font-semibold text-slate-900">{section.title}</p>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{section.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>

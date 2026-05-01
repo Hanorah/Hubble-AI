@@ -121,15 +121,16 @@ export function AppShell({ title, subtitle, children, hideTopNav = false }: Prop
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <div className="flex min-h-screen">
+        <div className={`hidden shrink-0 transition-all duration-300 lg:block ${sidebarOpen ? "w-72" : "w-24"}`} />
         <aside
-          className={`hidden h-screen self-start flex-col overflow-hidden border-r border-red-100 bg-white p-3 transition-all duration-300 lg:sticky lg:top-0 lg:flex ${
+          className={`hidden fixed inset-y-0 left-0 z-40 flex-col overflow-y-auto border-r border-red-100 bg-white p-3 transition-all duration-300 lg:flex ${
             sidebarOpen ? "w-72" : "w-24"
           }`}
         >
           <div className={`mb-4 flex items-center ${sidebarOpen ? "justify-between" : "justify-center"}`}>
             {sidebarOpen ? (
               <Link href="/" className="inline-flex items-center" aria-label="Go to Hubble home">
-                <Image src="/logo.png" alt="Hubble logo" width={156} height={52} className="h-10 w-auto object-contain" priority />
+                <Image src="/logo.png" alt="Hubble logo" width={132} height={44} className="h-8 w-auto object-contain" priority />
               </Link>
             ) : null}
             <Button
@@ -239,7 +240,7 @@ export function AppShell({ title, subtitle, children, hideTopNav = false }: Prop
             >
               <div className="mb-4 flex items-center justify-between">
                 <Link href="/" className="inline-flex items-center" onClick={() => setMobileMenuOpen(false)} aria-label="Go to Hubble home">
-                  <Image src="/logo.png" alt="Hubble logo" width={148} height={50} className="h-9 w-auto object-contain" />
+                  <Image src="/logo.png" alt="Hubble logo" width={124} height={42} className="h-7 w-auto object-contain" />
                 </Link>
                 <Button
                   size="icon"
@@ -329,7 +330,7 @@ export function AppShell({ title, subtitle, children, hideTopNav = false }: Prop
                   >
                     <Menu className="h-5 w-5" />
                   </Button>
-                  <Image src="/logo.png" alt="Hubble logo" width={132} height={44} className="h-8 w-auto object-contain" />
+                  <Image src="/logo.png" alt="Hubble logo" width={114} height={38} className="h-7 w-auto object-contain" />
                 </div>
                 {title ? (
                   <div className="hidden lg:block">
